@@ -30,13 +30,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "edge-detection"
-version = "0.1.0"
-dependencies = [
- "png",
-]
-
-[[package]]
 name = "fdeflate"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -76,6 +69,13 @@ dependencies = [
  "fdeflate",
  "flate2",
  "miniz_oxide",
+]
+
+[[package]]
+name = "rust-cv"
+version = "0.1.0"
+dependencies = [
+ "png",
 ]
 
 [[package]]
