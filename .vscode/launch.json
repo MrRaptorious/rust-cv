@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'edge-detection'",
+            "name": "Debug executable 'rust-cv'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=edge-detection",
-                    "--package=edge-detection"
+                    "--bin=rust-cv",
+                    "--package=rust-cv"
                 ],
                 "filter": {
-                    "name": "edge-detection",
+                    "name": "rust-cv",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'edge-detection'",
+            "name": "Debug unit tests in executable 'rust-cv'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=edge-detection",
-                    "--package=edge-detection"
+                    "--bin=rust-cv",
+                    "--package=rust-cv"
                 ],
                 "filter": {
-                    "name": "edge-detection",
+                    "name": "rust-cv",
                     "kind": "bin"
                 }
             },
