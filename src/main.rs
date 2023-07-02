@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
 
-mod filter;
+pub mod filter;
 
 fn main() -> Result<(), Box<dyn Error>> {
     const IMG_PATH: &str = "res/lenna.png";
@@ -15,9 +15,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (buf, info) = load_image(IMG_PATH)?;
 
-    let gaussian_kernel =  filter::get_gaussian_kernel();
+    let kernel =  filter::get_right_sobel_kernel();
 
-    let filterd_image = filter::apply_kernel(&buf, (info.width,info.height), &gaussian_kernel)?;
+    // view kernel
+    kernel.print();
+
+    // filter b/w image
+    let gray_img = filter::to_gray(&buf);
+    let filterd_image = filter::apply_kernel(&gray_img[..], (info.width,info.height), &kernel)?;
 
     save_image(OUTPUT_PATH, &filterd_image, info)?;
 
