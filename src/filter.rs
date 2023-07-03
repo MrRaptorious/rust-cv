@@ -1,5 +1,6 @@
 use std::error::Error;
 use rayon::prelude::*;
+use crate::image;
 
 // nxn matrix to apply on a picture
 pub struct Kernel {
@@ -15,27 +16,27 @@ impl Kernel{
 
 // Applies the kernel to the image returning a new image
 pub fn apply_kernel(
-    img: &[u8],
-    img_size: (u32,u32),
+    img: image::Image,
     kernel: &Kernel,
-) -> Result<Vec<u8>, Box<dyn Error>> {
+) -> Result<image::Image, Box<dyn Error>> {
+    // anchor always in the middle
     let kernel_ancor_x = (kernel.size / 2) as i32;
     let kernel_ancor_y = (kernel.size / 2) as i32;
-
-    let mut filterd_image = vec![0; img.len()];
-    filterd_image.copy_from_slice(img);
+    
+    let mut filterd_image = vec![0; img.data.len()];
+    let pixel_width = img.get_pixl_width();
 
     // got through each pixel in result image
     filterd_image
-        .chunks_exact_mut(3)
+        .par_chunks_exact_mut(pixel_width)
         .enumerate()
-        .for_each(|(i, rgb)| {
+        .for_each(|(i, pixel)| {
 
             // get pixel index of current iteration
-            let img_x = i as u32 % img_size.0;
-            let img_y = if i > 0 { i as u32 / img_size.0 } else { 0 };
+            let img_x = i as u32 % img.width as u32;
+            let img_y = if i > 0 { i as u32 / img.width as u32 } else { 0 };
 
-            let mut kernel_result: Vec<f32> = vec![0f32, 0f32, 0f32];
+            let mut kernel_result: Vec<f32> = vec![0f32; pixel_width];
 
             // go through kernel
             kernel.val.iter().enumerate().for_each(|(j, kernel_val)| {
@@ -51,43 +52,24 @@ pub fn apply_kernel(
                 let ky_in_image = img_y as i32 + kernel_y;
 
                 // check if kernel part not out of bounds
-                if !((kx_in_image < 0 || kx_in_image >= img_size.0 as i32)
-                    || (ky_in_image < 0 || ky_in_image >= img_size.1 as i32))
+                if !((kx_in_image < 0 || kx_in_image >= img.width as i32)
+                    || (ky_in_image < 0 || ky_in_image >= img.height as i32))
                 {
                     let current_pos_in_image =
-                        kx_in_image * 3 + ky_in_image * 3 * img_size.0 as i32;
+                        kx_in_image * pixel_width as i32 + ky_in_image * pixel_width as i32 * img.width as i32;
 
-                    kernel_result[0] += kernel_val * img[current_pos_in_image as usize] as f32;
-                    kernel_result[1] += kernel_val * img[current_pos_in_image as usize + 1]as f32;
-                    kernel_result[2] += kernel_val * img[current_pos_in_image as usize + 2]as f32;
+                    kernel_result.iter_mut().enumerate().for_each(|(i,val)|{
+                        *val += kernel_val * img.data[current_pos_in_image as usize + i] as f32;
+                    });
                 }
             });
 
-            rgb[0] = kernel_result[0].clamp(0f32, 255f32) as u8;
-            rgb[1] = kernel_result[1].clamp(0f32, 255f32) as u8;
-            rgb[2] = kernel_result[2].clamp(0f32, 255f32) as u8;
+            pixel.iter_mut().zip(kernel_result.iter()).for_each(|(px, rs)|{
+                *px = rs.clamp(0f32, 255f32) as u8;
+            });
         });
 
-    Ok(filterd_image)
-}
-
-// Converts the image to a black and white version by averaging the R, G and B channels
-pub fn to_gray(img: &[u8]) -> Vec<u8> {
-
-    let mut gray_img = vec![0; img.len()];
-    gray_img.copy_from_slice(img);
-
-    gray_img.par_chunks_mut(3).for_each(|pxl| match pxl {
-        [r, g, b] => {
-            let gray = (((*r as u16) + (*g as u16) + (*b as u16)) / 3) as u8;
-            *r = gray;
-            *g = gray;
-            *b = gray;
-        }
-        _ => unreachable!(),
-    });
-
-    gray_img
+    Ok(image::Image{width:img.width, height:img.height, color_type: img.color_type, data:filterd_image})
 }
 
 // Get a default Gaussian 5x5 Kernel
