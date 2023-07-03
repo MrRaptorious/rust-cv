@@ -20,8 +20,8 @@ pub fn apply_kernel(
     kernel: &Kernel,
 ) -> Result<image::Image, Box<dyn Error>> {
     // anchor always in the middle
-    let kernel_ancor_x = (kernel.size / 2) as i32;
-    let kernel_ancor_y = (kernel.size / 2) as i32;
+    let kernel_anchor_x = (kernel.size / 2) as i32;
+    let kernel_anchor_y = (kernel.size / 2) as i32;
     
     let mut filterd_image = vec![0; img.data.len()];
     let pixel_width = img.get_pixl_width();
@@ -40,12 +40,12 @@ pub fn apply_kernel(
 
             // go through kernel
             kernel.val.iter().enumerate().for_each(|(j, kernel_val)| {
-                // note: coord 0 is on the ancor!
-                let kernel_x = (j as u32 % kernel.size as u32) as i32 - kernel_ancor_x;
+                // coord 0|0 is on the anchor!
+                let kernel_x = (j as u32 % kernel.size as u32) as i32 - kernel_anchor_x;
                 let kernel_y = if j > 0 {
-                    (j as i32 / kernel.size as i32) - kernel_ancor_y
+                    (j as i32 / kernel.size as i32) - kernel_anchor_y
                 } else {
-                    0 - kernel_ancor_y
+                    0 - kernel_anchor_y
                 };
 
                 let kx_in_image = img_x as i32 + kernel_x;
