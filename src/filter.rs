@@ -22,7 +22,7 @@ pub fn apply_kernel(
     // anchor always in the middle
     let kernel_anchor_x = (kernel.size / 2) as i32;
     let kernel_anchor_y = (kernel.size / 2) as i32;
-    
+
     let mut filterd_image = vec![0; img.data.len()];
     let pixel_width = img.get_pixl_width();
 

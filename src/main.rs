@@ -29,18 +29,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         color_type: image_type,
     };
 
-    let gray_image = image::to_gray(&image)?;    
+    let red_channel = image::get_channel(&image, image::Channel::R, false)?;
+    let green_channel = image::get_channel(&image, image::Channel::G, false)?;
+    let blue_channel = image::get_channel(&image, image::Channel::B, false)?;
 
-    // let gray_image = image::to_gray(image)?;
-    let kernel =  filter::get_gaussian_kernel();
 
-    // // view kernel
-    kernel.print();
+    image::save_image("out/r.png", &red_channel)?;
+    image::save_image("out/g.png", &green_channel)?;
+    image::save_image("out/b.png", &blue_channel)?;
 
-    // // filter b/w image
-    let filterd_image = filter::apply_kernel(gray_image, &kernel)?;
-
-    image::save_image(OUTPUT_PATH, &filterd_image)?;
+    image::save_image(OUTPUT_PATH, &image)?;
 
     Ok(())
 }

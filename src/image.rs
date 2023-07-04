@@ -1,12 +1,20 @@
 use core::fmt;
-use png::{OutputInfo, BitDepth, Decoder};
+use png::{BitDepth, Decoder, OutputInfo};
 use rayon::prelude::*;
-use std::{error::Error, fs::File, path::Path, io::BufWriter};
+use std::{error::{Error, self}, fs::File, io::BufWriter, path::Path};
 
 pub enum ColorType {
     Gray,
     Color,
 }
+
+pub enum Channel {
+    Gray,
+    R,
+    G, 
+    B,
+}
+
 #[derive(Debug)]
 struct ImageError {
     message: String,
@@ -36,10 +44,10 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn get_pixl_width(&self) -> usize{
+    pub fn get_pixl_width(&self) -> usize {
         match self.color_type {
-            ColorType::Gray => {1}
-            ColorType::Color => {3}
+            ColorType::Gray => 1,
+            ColorType::Color => 3,
         }
     }
 }
@@ -49,12 +57,12 @@ pub fn to_gray(image: &Image) -> Result<Image, Box<dyn Error>> {
     match image.color_type {
         ColorType::Gray => Err(Box::new(ImageError::new("The image is already gray."))),
         ColorType::Color => {
+            let mut gray_img = vec![0; image.data.len() / 3];
 
-            let mut gray_img = vec![0; image.data.len()/3];
-
-            gray_img.par_iter_mut().enumerate().for_each(|(i,pxl)|{
-                let original_pxl = &image.data[i*3..i*3+3];
-                let gray_color: u8 = (original_pxl.iter().map(|x| *x as u16).sum::<u16>() / 3) as u8;
+            gray_img.par_iter_mut().enumerate().for_each(|(i, pxl)| {
+                let original_pxl = &image.data[i * 3..i * 3 + 3];
+                let gray_color: u8 =
+                    (original_pxl.iter().map(|x| *x as u16).sum::<u16>() / 3) as u8;
 
                 *pxl = gray_color;
             });
@@ -66,6 +74,77 @@ pub fn to_gray(image: &Image) -> Result<Image, Box<dyn Error>> {
                 data: gray_img,
             })
         }
+    }
+}
+
+// Binarize the image, if the image is not grayscale it will be converted before
+pub fn binarize(image: &Image, threshold: u8) -> Result<Image, Box<dyn Error>> {    
+    let tmp_source_owner: Image;
+    let source_image = match image.color_type {
+        ColorType::Gray => {image}
+        _ => {
+                tmp_source_owner = to_gray(image)?;
+                &tmp_source_owner
+             }
+    };
+
+    let mut bin_image = vec![0; source_image.data.len()];
+
+    bin_image
+        .iter_mut()
+        .zip(source_image.data.iter())
+        .for_each(|(bpix, pix)| {
+            if *pix >= threshold {
+                *bpix = 255;
+            } else {
+                *bpix = 0;
+            }
+        });
+
+    Ok(Image {
+        width: image.width,
+        height: image.height,
+        color_type: ColorType::Gray,
+        data: bin_image,
+    })
+}
+
+/// Strips one channel out of the Image. If the image is of type Gray, it just will be cloned.
+/// # Arguments
+/// * `image` - The image to get the channel from
+/// * `channel` - The channel to receive
+/// * `in_color` - if true the returned image will be RGB but only contain one channel
+/// else only a gray image will be returned
+pub fn get_channel(image: &Image, channel: Channel, in_color: bool) -> Result<Image, Box<dyn Error>> {
+    match image.color_type{
+        ColorType::Color => {
+
+            let pixel_index = match channel {
+                Channel::R => {0}
+                Channel::G => {1}
+                Channel::B => {2}
+                _ => return Err(Box::new(ImageError::new("Color format of Image not supported!")))
+            };
+
+            if in_color
+            {
+                let mut channel_image: Vec<u8> =vec![0;image.data.len()];
+                channel_image.chunks_mut(image.get_pixl_width()).zip(image.data.chunks(image.get_pixl_width())).for_each(|(channel_pix, color_pix)|{
+                    channel_pix[pixel_index] = color_pix[pixel_index];
+                });
+
+                Ok(Image{width:image.width,height:image.height, color_type:ColorType::Color, data:channel_image})
+            }
+            else {
+                let mut channel_image: Vec<u8> =vec![0;image.data.len()/3];
+                channel_image.iter_mut().zip(image.data.chunks(image.get_pixl_width())).for_each(|(channel_pix, color_pix)|{
+                    *channel_pix = color_pix[pixel_index];
+                });
+
+                Ok(Image{width:image.width,height:image.height, color_type:ColorType::Gray, data:channel_image})
+            }
+        }
+        _ => Err(Box::new(ImageError::new("Color format of Image not supported!")))
     }
 }
 
