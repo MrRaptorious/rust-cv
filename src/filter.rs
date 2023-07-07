@@ -4,8 +4,8 @@ use crate::image;
 
 // nxn matrix to apply on a picture
 pub struct Kernel {
-    val: Vec<f32>,
-    size: usize,
+    pub val: Vec<f32>,
+    pub size: usize,
 }
 
 impl Kernel{
@@ -14,9 +14,9 @@ impl Kernel{
     }
 }
 
-// Applies the kernel to the image returning a new image
+// Creates a copy of the image, applies the kernel and saves the result in the copied image
 pub fn apply_kernel(
-    img: image::Image,
+    img: &image::Image,
     kernel: &Kernel,
 ) -> Result<image::Image, Box<dyn Error>> {
     // anchor always in the middle
@@ -72,78 +72,3 @@ pub fn apply_kernel(
     Ok(image::Image{width:img.width, height:img.height, color_type: img.color_type, data:filterd_image})
 }
 
-// Get a default Gaussian 5x5 Kernel
-pub fn get_gaussian_kernel() -> Kernel {
-    Kernel {
-        val: vec![
-            0.0037, 0.0147, 0.0256, 0.0147, 0.0037,
-            0.0147, 0.0586, 0.0952, 0.0586, 0.0147,
-            0.0256, 0.0952, 0.1502, 0.0952, 0.0256,
-            0.0147, 0.0586, 0.0952, 0.0586, 0.0147,
-            0.0037, 0.0147, 0.0256, 0.0147, 0.0037
-        ],
-        size: 5,
-    }
-}
-
-// Get a default outline 3x3 Kernel
-pub fn get_outline_kernel() -> Kernel {
-    Kernel {
-        val: vec![
-            -1.0, -1.0, -1.0,
-            -1.0, 8.0, -1.0,
-            -1.0, -1.0, -1.0,
-        ],
-        size: 3,
-    }
-}
-
-// Get a default right sobel 3x3 Kernel
-pub fn get_right_sobel_kernel() -> Kernel {
-    Kernel {
-        val: vec![
-            -1.0, 0.0, 1.0,
-            -2.0, 0.0, 2.0,
-            -1.0, 0.0, 1.0,
-        ],
-        size: 3,
-    }
-}
-
-// Get a default bottom sobel 3x3 Kernel
-pub fn get_bottom_sobel_kernel() -> Kernel {
-    Kernel {
-        val: vec![
-            -1.0, -2.0, -1.0,
-            0.0, 0.0, 0.0,
-            1.0, 2.0, 1.0,
-        ],
-        size: 3,
-    }
-}
-
-// Get a default sharpening 3x3 Kernel with given strenght
-pub fn get_sharpening_kernel(strength: f32) -> Kernel {
-    Kernel {
-        val: vec![
-            0.0, (-1.0/4.0) * strength , 0.0,
-            (-1.0/4.0) * strength, ((1.0) * strength) + 1.0f32, (-1.0/4.0) * strength,
-            0.0, (-1.0/4.0) * strength, 0.0
-        ],
-        size: 3,
-    }
-}
-
-// Get a default sharpening 3x3 Kernel with strength 1.0
-#[allow(unused_macros)]
-macro_rules! sharpening_kernel {
-    ($strength: expr) => {
-        filter::get_sharpening_kernel($strength)
-    };
-    () => {
-        filter::get_sharpening_kernel(1.0f32)
-    };
-}
-
-#[allow(unused_imports)]
-pub(crate) use sharpening_kernel;
